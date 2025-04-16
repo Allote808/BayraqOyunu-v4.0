@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bayraq Oyunu</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    /* Temalar */
+    body.dark { background-color: #121212; color: white; }
+    body.blue { background-color: #d0e7ff; color: #003366; }
+    body.neon { background-color: black; color: #39ff14; }
+    body.retro { background-color: #fceabb; color: #6a0572; }
+    h1 { font-size: 24px; margin: 15px 0; }
+    
+    /* Navbar */
+    .navbar {
+      width: 100%;
+      background-color: #2d3e50;
+      color: white;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+    .navbar-left, .navbar-right {
+      display: flex;
+      align-items: center;
+    }
+    .navbar-title { margin-right: 15px; }
+    .navbar .menu, .market-button { cursor: pointer; font-size: 20px; margin-left: 10px; }
+    .navbar-coin {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    /* Dil seçimi dropdown-u */
+    .language-select {
+      margin-left: 10px;
+      padding: 5px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+    }
+    .menu-options {
+      display: none;
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      background-color: #fff;
+      color: #333;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    .navbar.dark .menu-options { background-color: #333; color: white; }
+    .menu-options button, .menu-options select {
+      padding: 8px 12px;
+      margin: 5px;
+      border: none;
+      background-color: #2d3e50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .menu-options button:hover { background-color: #4CAF50; }
+    
+    /* Ses kontrolü */
+    .navbar-volume-control {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      padding: 5px 10px;
+      margin-right: 10px;
+    }
+    .navbar-volume-slider {
+      width: 60px;
+      margin: 0 5px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    .navbar-volume-slider::-webkit-slider-runnable-track {
+      height: 4px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 2px;
+    }
+    .navbar-volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: blue;
+      border-radius: 50%;
+      margin-top: -4px;
+    }
+    
+    /* Göstergeler */
+    #score-timer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin: 5px;
+    }
+    #score, #timer, #coins { font-size: 16px; font-weight: bold; }
+    #question { font-size: 18px; margin: 10px 0; text-align: center; }
+    
+    /* Hediye Mesajı */
+    #giftMessage {
+      font-size: 16px;
+      color: #0066cc;
+      margin: 10px 0;
+    }
+    
+    /* Oyun kartları (açıq bayraq) */
+    .flags {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      padding: 15px;
+      width: 90%;
+      max-width: 500px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s, border 0.3s ease;
+      cursor: pointer;
+      border: 3px solid transparent;
+      position: relative;
+    }
+    .card img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      display: block;
+    }
+    .card.correct { border-color: #4CAF50; }
+    .card.wrong { border-color: #F44336; }
+    
+    /* Cədvəl stilizasiyası və skroll */
+    #flagsTableContainer {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: white;
+      padding: 10px;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    #flagsTableContainer h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #flagsTableContainer select {
+      padding: 5px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #flagsTable {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: center;
+    }
+    #flagsTable th, #flagsTable td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    /* Tema təsirləri cədvəl üçün */
+    body.dark #flagsTable,
+    body.dark #flagsTable th,
+    body.dark #flagsTable td,
+    body.dark #flagsTableContainer {
+      border-color: white;
+      color: white;
+      background: #333;
+    }
+    body.blue #flagsTable,
+    body.blue #flagsTable th,
+    body.blue #flagsTable td,
+    body.blue #flagsTableContainer {
+      border-color: #003366;
+      color: #003366;
+      background: #d0e7ff;
+    }
+    body.neon #flagsTable,
+    body.neon #flagsTable th,
+    body.neon #flagsTable td,
+    body.neon #flagsTableContainer {
+      border-color: #39ff14;
+      color: #39ff14;
+      background: black;
+    }
+    body.retro #flagsTable,
+    body.retro #flagsTable th,
+    body.retro #flagsTable td,
+    body.retro #flagsTableContainer {
+      border-color: #6a0572;
+      color: #6a0572;
+      background: #fceabb;
+    }
+    
+    /* Unlock button stilizasiyası */
+    .unlock-btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #2d3e50;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    body.dark .unlock-btn { background-color: #444; }
+    body.blue .unlock-btn { background-color: #003366; }
+    body.neon .unlock-btn { background-color: #000; color: #39ff14; }
+    body.retro .unlock-btn { background-color: #6a0572; }
+    
+    /* Modallar (Market, Login, Oyun Sonu) */
+    #marketModal, #loginModal, #endModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+    #marketContent, #modalContent {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      color: #333;
+      position: relative;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark #marketContent, body.dark #modalContent { background-color: #333; color: white; }
+    body.blue #marketContent, body.blue #modalContent { background-color: #d0e7ff; color: #003366; }
+    body.neon #marketContent, body.neon #modalContent { background-color: #000; color: #39ff14; }
+    body.retro #marketContent, body.retro #modalContent { background-color: #fceabb; color: #6a0572; }
+    
+    /* Kapat (X) butonu */
+    #marketClose {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+    }
+    
+    /* Animasyonlu saat */
+    .animated-clock {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      margin: 0 auto;
+    }
+    .animated-clock::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 3px;
+      height: 18px;
+      background: currentColor;
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%) rotate(0deg);
+      animation: rotateSeconds 60s linear infinite;
+    }
+    @keyframes rotateSeconds {
+      from { transform: translate(-50%, -100%) rotate(0deg); }
+      to { transform: translate(-50%, -100%) rotate(360deg); }
+    }
+    
+    /* Form elemanları */
+    input {
+      padding: 10px;
+      width: 80%;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #2d3e50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #4CAF50; }
+    
+    .game-inactive { opacity: 0.6; pointer-events: none; }
+    
+    @media (max-width: 500px) {
+      .navbar-title { display: none; }
+      .navbar-volume-slider { width: 40px; }
+      .shop-item { padding: 8px 5px; font-size: 13px; }
+      .animated-clock { width: 30px; height: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar və Ayarlar -->
+  <div class="navbar" id="navbar">
+    <div class="navbar-left">
+      <span class="navbar-title" id="navbarTitle">🌍 Bayraq Oyunu</span>
+      <!-- Dil seçimi -->
+      <select class="language-select" id="languageSelect" onchange="setLanguage(this.value)">
+        <option value="az">AZ</option>
+        <option value="en">ENG</option>
+        <option value="ru">RUS</option>
+      </select>
+    </div>
+    <div class="navbar-right">
+      <div class="navbar-volume-control">
+        <span id="musicToggle" onclick="toggleMusic()">🔉</span>
+        <input type="range" id="volumeSlider" class="navbar-volume-slider" min="0" max="100" value="50">
+      </div>
+      <span class="navbar-coin" id="navbarCoin">💰 0</span>
+      <span class="market-button" onclick="openMarketModal()">🛒</span>
+      <span class="menu" onclick="toggleMenu()">⚙️</span>
+    </div>
+    <div class="menu-options" id="menu-options">
+      <p id="usernameInSettings">Giriş etmediniz.</p>
+      <label id="timeLabel">Zaman: <select id="timeSelect">
+        <option value="60">60s</option>
+        <option value="120">120s</option>
+        <option value="200">200s</option>
+      </select></label><br>
+      <label id="difficultyLabel">Çətinlik: <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select></label><br>
+      <label id="themeLabel">Tema: <select id="theme">
+        <option value="">Standart</option>
+        <option value="dark">Dark</option>
+        <option value="blue">Blue</option>
+        <option value="neon">Neon</option>
+        <option value="retro">Retro</option>
+      </select></label><br>
+      <button onclick="applySettings()" id="applyButton">Tətbiq et</button>
+      <button id="loginLogoutBtn" onclick="handleLoginLogout()">Giriş</button>
+    </div>
+  </div>
+  
+  <!-- Göstergeler -->
+  <div id="score-timer">
+    <span id="score">Xal: 0</span>
+    <span id="timer">Vaxt: 60</span>
+    <span id="coins">💰 0</span>
+  </div>
+  
+  <!-- Hediye Mesajı -->
+  <div id="giftMessage" style="display:none;">20 coin hediye verildi, lütfen bayraq alın oyun oynamak üçün</div>
+  
+  <h1 id="question">Haradır bu bayraq?</h1>
+  
+  <!-- Oyun Alanı: Açıq bayraqlar -->
+  <div class="flags game-inactive" id="flags"></div>
+  
+  <!-- Cədvəl: Bayraqları "Kilitli" və "Açıq" kateqoriyalara görə göstərir -->
+  <div id="flagsTableContainer">
+    <h3 id="tableTitle">Bayraqlar</h3>
+    <label id="continentLabel">Kontinent seç: 
+      <select id="continentSelect" onchange="renderFlagsTable()">
+        <option value="all">Hamısı</option>
+        <option value="Europe">Avropa</option>
+        <option value="Asia">Asiya</option>
+        <option value="North America">Şimali Amerika</option>
+        <option value="South America">Cənubi Amerika</option>
+        <option value="Africa">Afrika</option>
+        <option value="Oceania">Okeaniya</option>
+      </select>
+    </label>
+    <table id="flagsTable">
+      <thead>
+        <tr>
+          <th id="lockedHeader">Kilitli Bayraq</th>
+          <th id="unlockedHeader">Açıq Bayraq</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JS vasitəsilə doldurulacaq -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Modallar (Market, Login, Oyun Sonu) -->
+  <div id="marketModal">
+    <div id="marketContent">
+      <button id="marketClose" onclick="closeMarketModal()">X</button>
+      <h2 id="marketTitle">Market</h2>
+      <div id="shopItems"></div>
+    </div>
+  </div>
+  
+  <div id="loginModal">
+    <div id="modalContent">
+      <h2 id="loginTitle">Adınızı daxil edin</h2>
+      <input type="text" id="usernameInput" placeholder="Məsələn: Rəsul">
+      <button onclick="startGame()" id="startButton">Başla</button>
+    </div>
+  </div>
+  
+  <div id="endModal">
+    <div id="modalContent">
+      <h2 id="endTitle">Oyun bitdi!</h2>
+      <p id="finalScore"></p>
+      <button onclick="restartGame()" id="restartButton">Tekrar oyna</button>
+    </div>
+  </div>
+  
+  <!-- Seslər -->
+  <audio id="correctSound" src="Doğru.mp3"></audio>
+  <audio id="wrongSound" src="Yanlış.mp3"></audio>
+  <audio id="backgroundMusic" src="oyunmusic.mp3" loop></audio>
+  
+  <script>
+    /* ---------- DİL TRANSLEYİCİ KODU ---------- */
+    const translations = {
+      az: {
+        navbarTitle: "🌍 Bayraq Oyunu",
+        notLoggedIn: "Giriş etmediniz.",
+        timeLabel: "Zaman:",
+        difficultyLabel: "Çətinlik:",
+        themeLabel: "Tema:",
+        applyButton: "Tətbiq et",
+        loginButton: "Giriş",
+        logoutButton: "Çıxış",
+        question: "Haradır bu bayraq?",
+        tableTitle: "Bayraqlar",
+        continentLabel: "Kontinent seç:",
+        lockedHeader: "Kilitli Bayraq",
+        unlockedHeader: "Açıq Bayraq",
+        marketTitle: "Market",
+        loginTitle: "Adınızı daxil edin",
+        startButton: "Başla",
+        endTitle: "Oyun bitdi!",
+        restartButton: "Tekrar oyna",
+        giftMessage: "20 coin hediye verildi, lütfen bayraq alın oyun oynamak üçün",
+        unlockBtn: "Aç"
+      },
+      en: {
+        navbarTitle: "🌍 Flag Game",
+        notLoggedIn: "Not logged in.",
+        timeLabel: "Time:",
+        difficultyLabel: "Difficulty:",
+        themeLabel: "Theme:",
+        applyButton: "Apply",
+        loginButton: "Login",
+        logoutButton: "Logout",
+        question: "Which flag is this?",
+        tableTitle: "Flags",
+        continentLabel: "Select continent:",
+        lockedHeader: "Locked Flag",
+        unlockedHeader: "Unlocked Flag",
+        marketTitle: "Market",
+        loginTitle: "Enter your name",
+        startButton: "Start",
+        endTitle: "Game Over!",
+        restartButton: "Play Again",
+        giftMessage: "20 coins have been gifted, please purchase a flag to play",
+        unlockBtn: "Unlock"
+      },
+      ru: {
+        navbarTitle: "🌍 Флаговая Игра",
+        notLoggedIn: "Не авторизованы.",
+        timeLabel: "Время:",
+        difficultyLabel: "Сложность:",
+        themeLabel: "Тема:",
+        applyButton: "Применить",
+        loginButton: "Вход",
+        logoutButton: "Выход",
+        question: "Какой это флаг?",
+        tableTitle: "Флаги",
+        continentLabel: "Выберите континент:",
+        lockedHeader: "Заблокированный",
+        unlockedHeader: "Разблокированный",
+        marketTitle: "Магазин",
+        loginTitle: "Введите ваше имя",
+        startButton: "Начать",
+        endTitle: "Игра окончена!",
+        restartButton: "Играть снова",
+        giftMessage: "Вам подарили 20 монет, пожалуйста, купите флаг для игры",
+        unlockBtn: "Открыть"
+      }
+    };
+    let currentLanguage = "az";
+    function updateTexts() {
+      const t = translations[currentLanguage];
+      document.getElementById("navbarTitle").textContent = t.navbarTitle;
+      document.getElementById("usernameInSettings").textContent = localStorage.getItem("username") ? localStorage.getItem("username") : t.notLoggedIn;
+      document.getElementById("timeLabel").childNodes[0].textContent = t.timeLabel + " ";
+      document.getElementById("difficultyLabel").childNodes[0].textContent = t.difficultyLabel + " ";
+      document.getElementById("themeLabel").childNodes[0].textContent = t.themeLabel + " ";
+      document.getElementById("applyButton").textContent = t.applyButton;
+      document.getElementById("loginLogoutBtn").textContent = localStorage.getItem("username") ? t.logoutButton : t.loginButton;
+      document.getElementById("question").textContent = t.question + (correctAnswer ? `: ${correctAnswer}?` : "");
+      document.getElementById("tableTitle").textContent = t.tableTitle;
+      document.getElementById("continentLabel").childNodes[0].textContent = t.continentLabel + " ";
+      document.getElementById("lockedHeader").textContent = t.lockedHeader;
+      document.getElementById("unlockedHeader").textContent = t.unlockedHeader;
+      document.getElementById("marketTitle").textContent = t.marketTitle;
+      document.getElementById("loginTitle").textContent = t.loginTitle;
+      document.getElementById("startButton").textContent = t.startButton;
+      document.getElementById("endTitle").textContent = t.endTitle;
+      document.getElementById("restartButton").textContent = t.restartButton;
+      document.getElementById("giftMessage").textContent = t.giftMessage;
+    }
+    function setLanguage(lang) {
+      currentLanguage = lang;
+      localStorage.setItem("lang", lang);
+      updateTexts();
+      renderFlagsTable();
+    }
+    
+    /* ---------- BAYRAKLAR MƏLUMATLARI ---------- */
+    // Aşağıdakı flag obyektlərinə hər bir üçün continent xüsusiyyəti daxil edilib
+    const flags = [
+      { name: "Azərbaycan", img: "https://flagcdn.com/w320/az.png", continent: "Europe" },
+      { name: "Rusya", img: "https://flagcdn.com/w320/ru.png", continent: "Europe" },
+      { name: "Amerika", img: "https://flagcdn.com/w320/us.png", continent: "North America" },
+      { name: "Almaniya", img: "https://flagcdn.com/w320/de.png", continent: "Europe" },
+      { name: "Türkiyə", img: "https://flagcdn.com/w320/tr.png", continent: "Asia" },
+      { name: "Yunanıstan", img: "https://flagcdn.com/w320/gr.png", continent: "Europe" },
+      { name: "Fransa", img: "https://flagcdn.com/w320/fr.png", continent: "Europe" },
+      { name: "İtaliya", img: "https://flagcdn.com/w320/it.png", continent: "Europe" },
+      { name: "Yaponya", img: "https://flagcdn.com/w320/jp.png", continent: "Asia" },
+      { name: "Koreya", img: "https://flagcdn.com/w320/kr.png", continent: "Asia" },
+      { name: "Braziliya", img: "https://flagcdn.com/w320/br.png", continent: "South America" },
+      { name: "İngiltərə", img: "https://flagcdn.com/w320/gb.png", continent: "Europe" },
+      { name: "İspaniya", img: "https://flagcdn.com/w320/es.png", continent: "Europe" },
+      { name: "Kanada", img: "https://flagcdn.com/w320/ca.png", continent: "North America" },
+      { name: "Çin", img: "https://flagcdn.com/w320/cn.png", continent: "Asia" },
+      { name: "Avstraliya", img: "https://flagcdn.com/w320/au.png", continent: "Oceania" },
+      { name: "Hindistan", img: "https://flagcdn.com/w320/in.png", continent: "Asia" },
+      { name: "Meksika", img: "https://flagcdn.com/w320/mx.png", continent: "North America" },
+      { name: "İrlandiya", img: "https://flagcdn.com/w320/ie.png", continent: "Europe" },
+      { name: "Portuqaliya", img: "https://flagcdn.com/w320/pt.png", continent: "Europe" },
+      { name: "İsveç", img: "https://flagcdn.com/w320/se.png", continent: "Europe" },
+      { name: "Norveç", img: "https://flagcdn.com/w320/no.png", continent: "Europe" },
+      { name: "Finlandiya", img: "https://flagcdn.com/w320/fi.png", continent: "Europe" },
+      { name: "Danimarka", img: "https://flagcdn.com/w320/dk.png", continent: "Europe" },
+      { name: "Hollandiya", img: "https://flagcdn.com/w320/nl.png", continent: "Europe" },
+      { name: "Belçika", img: "https://flagcdn.com/w320/be.png", continent: "Europe" },
+      { name: "İsveçrə", img: "https://flagcdn.com/w320/ch.png", continent: "Europe" },
+      { name: "Avstriya", img: "https://flagcdn.com/w320/at.png", continent: "Europe" },
+      { name: "Polşa", img: "https://flagcdn.com/w320/pl.png", continent: "Europe" },
+      { name: "Çexiya", img: "https://flagcdn.com/w320/cz.png", continent: "Europe" },
+      { name: "Slovakiya", img: "https://flagcdn.com/w320/sk.png", continent: "Europe" },
+      { name: "Macarıstan", img: "https://flagcdn.com/w320/hu.png", continent: "Europe" },
+      { name: "Rumıniya", img: "https://flagcdn.com/w320/ro.png", continent: "Europe" },
+      { name: "Bolqarıstan", img: "https://flagcdn.com/w320/bg.png", continent: "Europe" },
+      { name: "Serbiya", img: "https://flagcdn.com/w320/rs.png", continent: "Europe" },
+      { name: "Xorvatiya", img: "https://flagcdn.com/w320/hr.png", continent: "Europe" },
+      { name: "Sloveniya", img: "https://flagcdn.com/w320/si.png", continent: "Europe" },
+      { name: "Bosniya və Herseqovina", img: "https://flagcdn.com/w320/ba.png", continent: "Europe" },
+      { name: "Şimali Makedoniya", img: "https://flagcdn.com/w320/mk.png", continent: "Europe" },
+      { name: "Albaniya", img: "https://flagcdn.com/w320/al.png", continent: "Europe" },
+      { name: "Moldova", img: "https://flagcdn.com/w320/md.png", continent: "Europe" },
+      { name: "Ukrayna", img: "https://flagcdn.com/w320/ua.png", continent: "Europe" },
+      { name: "Belarus", img: "https://flagcdn.com/w320/by.png", continent: "Europe" },
+      { name: "Litva", img: "https://flagcdn.com/w320/lt.png", continent: "Europe" },
+      { name: "Latviya", img: "https://flagcdn.com/w320/lv.png", continent: "Europe" },
+      { name: "Estoniya", img: "https://flagcdn.com/w320/ee.png", continent: "Europe" },
+      { name: "Gürcüstan", img: "https://flagcdn.com/w320/ge.png", continent: "Asia" },
+      { name: "Ermənistan", img: "https://flagcdn.com/w320/am.png", continent: "Asia" },
+      { name: "İran", img: "https://flagcdn.com/w320/ir.png", continent: "Asia" },
+      { name: "İraq", img: "https://flagcdn.com/w320/iq.png", continent: "Asia" },
+      { name: "Suriya", img: "https://flagcdn.com/w320/sy.png", continent: "Asia" },
+      { name: "İordaniya", img: "https://flagcdn.com/w320/jo.png", continent: "Asia" },
+      { name: "Livan", img: "https://flagcdn.com/w320/lb.png", continent: "Asia" },
+      { name: "İsrail", img: "https://flagcdn.com/w320/il.png", continent: "Asia" },
+      { name: "Səudiyyə Ərəbistanı", img: "https://flagcdn.com/w320/sa.png", continent: "Asia" },
+      { name: "Birləşmiş Ərəb Əmirlikləri", img: "https://flagcdn.com/w320/ae.png", continent: "Asia" },
+      { name: "Qatar", img: "https://flagcdn.com/w320/qa.png", continent: "Asia" },
+      { name: "Küveyt", img: "https://flagcdn.com/w320/kw.png", continent: "Asia" },
+      { name: "Bəhreyn", img: "https://flagcdn.com/w320/bh.png", continent: "Asia" },
+      { name: "Oman", img: "https://flagcdn.com/w320/om.png", continent: "Asia" },
+      { name: "Yəmən", img: "https://flagcdn.com/w320/ye.png", continent: "Asia" },
+      { name: "Misir", img: "https://flagcdn.com/w320/eg.png", continent: "Africa" },
+      { name: "Sudan", img: "https://flagcdn.com/w320/sd.png", continent: "Africa" },
+      { name: "Tunis", img: "https://flagcdn.com/w320/tn.png", continent: "Africa" },
+      { name: "Əlcəzair", img: "https://flagcdn.com/w320/dz.png", continent: "Africa" },
+      { name: "Mərakeş", img: "https://flagcdn.com/w320/ma.png", continent: "Africa" },
+      { name: "Keniya", img: "https://flagcdn.com/w320/ke.png", continent: "Africa" },
+      { name: "Cənubi Afrika", img: "https://flagcdn.com/w320/za.png", continent: "Africa" },
+      { name: "Nigeriya", img: "https://flagcdn.com/w320/ng.png", continent: "Africa" },
+      { name: "Qana", img: "https://flagcdn.com/w320/gh.png", continent: "Africa" },
+      { name: "Tanzaniya", img: "https://flagcdn.com/w320/tz.png", continent: "Africa" },
+      { name: "Seneqal", img: "https://flagcdn.com/w320/sn.png", continent: "Africa" },
+      { name: "Efiopiya", img: "https://flagcdn.com/w320/et.png", continent: "Africa" },
+      { name: "Yeni Zelandiya", img: "https://flagcdn.com/w320/nz.png", continent: "Oceania" },
+      { name: "Argentina", img: "https://flagcdn.com/w320/ar.png", continent: "South America" },
+      { name: "Çili", img: "https://flagcdn.com/w320/cl.png", continent: "South America" },
+      { name: "Peru", img: "https://flagcdn.com/w320/pe.png", continent: "South America" },
+      { name: "Kolumbiya", img: "https://flagcdn.com/w320/co.png", continent: "South America" },
+      { name: "Venesuela", img: "https://flagcdn.com/w320/ve.png", continent: "South America" },
+      { name: "Urugvay", img: "https://flagcdn.com/w320/uy.png", continent: "South America" },
+      { name: "Paraqvay", img: "https://flagcdn.com/w320/py.png", continent: "South America" },
+      { name: "Boliviya", img: "https://flagcdn.com/w320/bo.png", continent: "South America" },
+      { name: "Ekvador", img: "https://flagcdn.com/w320/ec.png", continent: "South America" },
+      { name: "Tailand", img: "https://flagcdn.com/w320/th.png", continent: "Asia" },
+      { name: "Vyetnam", img: "https://flagcdn.com/w320/vn.png", continent: "Asia" },
+      { name: "Malayziya", img: "https://flagcdn.com/w320/my.png", continent: "Asia" },
+      { name: "İndoneziya", img: "https://flagcdn.com/w320/id.png", continent: "Asia" },
+      { name: "Filippin", img: "https://flagcdn.com/w320/ph.png", continent: "Asia" },
+      { name: "Sinqapur", img: "https://flagcdn.com/w320/sg.png", continent: "Asia" },
+      { name: "Monqolustan", img: "https://flagcdn.com/w320/mn.png", continent: "Asia" },
+      { name: "Qazaxıstan", img: "https://flagcdn.com/w320/kz.png", continent: "Asia" },
+      { name: "Panama", img: "https://flagcdn.com/w320/pa.png", continent: "North America" }
+    ];
+    
+    // unlockedFlags – LocalStorage-dan yüklənir
+    let unlockedFlags = JSON.parse(localStorage.getItem("unlockedFlags") || "[]");
+    if (!unlockedFlags.length) {
+      localStorage.setItem("unlockedFlags", JSON.stringify(unlockedFlags));
+    }
+    // lockedFlags obyektləri yaradılır (her flag üçün qiymət və unlocked status)
+    let lockedFlags = flags.map((flag, index) => ({
+      ...flag,
+      price: 5,
+      unlocked: unlockedFlags.includes(index)
+    }));
+    
+    let correctAnswer = "", score = 0, gameCoins = 0, totalCoins = 0;
+    let timer, timeLeft = 60, username = "", isLoggedIn = false;
+    let isMusicPlaying = true, volume = 50;
+    let currentDifficulty = "easy";
+    let scoreMultiplier = 1;
+    
+    const backgroundMusic = document.getElementById("backgroundMusic");
+    const correctSound = document.getElementById("correctSound");
+    const wrongSound = document.getElementById("wrongSound");
+    const volumeSlider = document.getElementById("volumeSlider");
+    
+    /* ---------- OYUN YÜKLƏNMƏSİ ---------- */
+    window.onload = function() {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) document.body.className = savedTheme;
+      totalCoins = parseInt(localStorage.getItem("coins") || "0");
+      document.getElementById("navbarCoin").textContent = "💰 " + totalCoins;
+      volume = parseInt(localStorage.getItem('volume') || "50");
+      isMusicPlaying = localStorage.getItem('musicSetting') !== 'false';
+      volumeSlider.value = volume;
+      updateVolume();
+      
+      if (localStorage.getItem("lang")) {
+        currentLanguage = localStorage.getItem("lang");
+        document.getElementById("languageSelect").value = currentLanguage;
+      }
+      updateTexts();
+      
+      if (localStorage.getItem("username")) {
+        username = localStorage.getItem("username");
+        isLoggedIn = true;
+        document.getElementById("loginModal").style.display = "none";
+        document.getElementById("usernameInSettings").textContent = username;
+        document.getElementById("loginLogoutBtn").textContent = translations[currentLanguage].logoutButton;
+      }
+      
+      if (!localStorage.getItem("gifted")) {
+        totalCoins += 20;
+        localStorage.setItem("coins", totalCoins);
+        localStorage.setItem("gifted", "true");
+        document.getElementById("navbarCoin").textContent = "💰 " + totalCoins;
+        document.getElementById("giftMessage").style.display = "block";
+      }
+      
+      generateFlags();
+      renderFlagsTable();
+    };
+    
+    function updateVolume() {
+      const vol = volume / 100;
+      [backgroundMusic, correctSound, wrongSound].forEach(sound => sound.volume = vol);
+      document.getElementById("musicToggle").textContent = volume === 0 ? "🔇" : volume < 100 ? "🔉" : "🔊";
+    }
+    
+    function toggleMusic() {
+      isMusicPlaying = !isMusicPlaying;
+      if (isMusicPlaying && volume > 0) backgroundMusic.play();
+      else backgroundMusic.pause();
+      localStorage.setItem('musicSetting', isMusicPlaying);
+    }
+    
+    function toggleMenu() {
+      const menu = document.getElementById("menu-options");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+    
+    /* ---------- OYUN ALANI: Açıq bayraq kartları ---------- */
+    function generateFlags() {
+      const unlockedList = lockedFlags.filter(flag => flag.unlocked);
+      let flagCount = currentDifficulty === "hard" ? 6 : 4;
+      if (unlockedList.length < flagCount) flagCount = unlockedList.length;
+      const shuffled = unlockedList.sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, flagCount);
+      if(selected.length)
+        correctAnswer = selected[Math.floor(Math.random() * selected.length)].name;
+      else
+        correctAnswer = "";
+      document.getElementById("question").textContent = translations[currentLanguage].question + (correctAnswer ? `: ${correctAnswer}?` : "");
+      
+      const flagsDiv = document.getElementById("flags");
+      flagsDiv.innerHTML = "";
+      selected.forEach(flag => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const img = document.createElement("img");
+        img.src = flag.img;
+        card.appendChild(img);
+        card.onclick = () => selectFlag(flag.name, card);
+        flagsDiv.appendChild(card);
+      });
+    }
+    
+    function selectFlag(name, card) {
+      let baseIncrement = currentDifficulty === "hard" ? 20 : currentDifficulty === "medium" ? 15 : 10;
+      let increment = baseIncrement * scoreMultiplier;
+      
+      if (name === correctAnswer) {
+        score += increment;
+        gameCoins += 1;
+        correctSound.play();
+        card.classList.add("correct");
+        if (scoreMultiplier > 1) scoreMultiplier = 1;
+      } else {
+        wrongSound.play();
+        card.classList.add("wrong");
+      }
+      
+      document.getElementById("score").textContent = "Xal: " + score;
+      document.getElementById("coins").textContent = "💰 " + gameCoins;
+      setTimeout(generateFlags, 800);
+    }
+    
+    /* ---------- OYUN BAŞLATMA, AYARLAR və MODALLAR ---------- */
+    function startGame() {
+      currentDifficulty = document.getElementById("difficulty").value;
+      if (!isLoggedIn) {
+        const input = document.getElementById("usernameInput");
+        username = input.value.trim();
+        if (!username) return alert("Ad daxil edin!");
+        localStorage.setItem("username", username);
+      }
+      
+      document.getElementById("loginModal").style.display = "none";
+      document.getElementById("flags").classList.remove("game-inactive");
+      document.getElementById("usernameInSettings").textContent = username;
+      isLoggedIn = true;
+      document.getElementById("loginLogoutBtn").textContent = translations[currentLanguage].logoutButton;
+      
+      score = 0;
+      gameCoins = 0;
+      timeLeft = parseInt(document.getElementById("timeSelect").value);
+      document.getElementById("score").textContent = "Xal: 0";
+      document.getElementById("coins").textContent = "💰 0";
+      document.getElementById("timer").textContent = "Vaxt: " + timeLeft;
+      
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").textContent = "Vaxt: " + timeLeft;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+    
+    function endGame() {
+      clearInterval(timer);
+      totalCoins += gameCoins;
+      localStorage.setItem("coins", totalCoins);
+      document.getElementById("navbarCoin").textContent = "💰 " + totalCoins;
+      document.getElementById("flags").classList.add("game-inactive");
+      document.getElementById("finalScore").textContent = `Xal: ${score} | Qazandığın pul: ${gameCoins}`;
+      document.getElementById("endModal").style.display = "flex";
+    }
+    
+    function restartGame() {
+      document.getElementById("endModal").style.display = "none";
+      startGame();
+    }
+    
+    function applySettings() {
+      const theme = document.getElementById("theme").value;
+      document.body.className = theme;
+      localStorage.setItem("theme", theme);
+      toggleMenu();
+    }
+    
+    function handleLoginLogout() {
+      if (isLoggedIn) {
+        localStorage.removeItem("username");
+        location.reload();
+      } else {
+        document.getElementById("loginModal").style.display = "flex";
+      }
+    }
+    
+    /* ---------- MARKET İŞLEMLƏRİ ---------- */
+    const shopItems = [
+      {
+        id: 'extraTime',
+        name: 'Extra Time',
+        description: 'Timera 10 saniyə əlavə et.',
+        price: 5,
+        useClock: true
+      },
+      {
+        id: 'scoreBoost',
+        name: 'Score Boost',
+        description: 'Növbəti doğru cavabda xal ikiqat artacaq.',
+        price: 10,
+        icon: '⚡'
+      }
+    ];
+    
+    function openMarketModal() {
+      renderMarket();
+      document.getElementById("marketModal").style.display = "flex";
+    }
+    
+    function closeMarketModal() {
+      document.getElementById("marketModal").style.display = "none";
+    }
+    
+    function renderMarket() {
+      const shopDiv = document.getElementById("shopItems");
+      shopDiv.innerHTML = "";
+      shopItems.forEach(item => {
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "shop-item";
+        const iconContainer = document.createElement("div");
+        iconContainer.className = "shop-item-icon";
+        let iconHTML = item.useClock ?
+          `<div class="animated-clock"></div>` :
+          `<div class="icon">${item.icon}</div>`;
+        iconContainer.innerHTML = iconHTML;
+        const textContainer = document.createElement("div");
+        textContainer.className = "shop-item-text";
+        textContainer.innerHTML = `<strong>${item.name}</strong><br>
+                                   ${item.description}<br>
+                                   Coin: ${item.price}`;
+        const buyBtn = document.createElement("button");
+        buyBtn.textContent = "Al";
+        buyBtn.onclick = () => purchaseItem(item.id);
+        itemDiv.appendChild(iconContainer);
+        itemDiv.appendChild(textContainer);
+        itemDiv.appendChild(buyBtn);
+        shopDiv.appendChild(itemDiv);
+      });
+    }
+    
+    function purchaseItem(itemId) {
+      const item = shopItems.find(i => i.id === itemId);
+      if (!item) return;
+      if (totalCoins < item.price) {
+        return alert("Kifayət qədər coin yoxdur!");
+      }
+      totalCoins -= item.price;
+      localStorage.setItem("coins", totalCoins);
+      document.getElementById("navbarCoin").textContent = "💰 " + totalCoins;
+      if (itemId === 'extraTime') {
+        timeLeft += 10;
+        document.getElementById("timer").textContent = "Vaxt: " + timeLeft;
+        alert("Timerə 10 saniyə əlavə edildi!");
+      } else if (itemId === 'scoreBoost') {
+        scoreMultiplier = 2;
+        alert("Növbəti doğru cavabda xal ikiqat olacaq!");
+      }
+      renderMarket();
+      closeMarketModal();
+    }
+    
+    volumeSlider.addEventListener("input", function() {
+      volume = parseInt(this.value);
+      updateVolume();
+      localStorage.setItem('volume', volume);
+    });
+    
+    /* ---------- CƏDVƏL FUNKSİYONALLIĞI ---------- */
+    function renderFlagsTable() {
+      // Yenidən lockedFlags array-ni flags və localStorage-dakı unlockedFlags ilə yeniləyirik
+      lockedFlags = flags.map((flag, index) => ({
+        ...flag,
+        price: 5,
+        unlocked: unlockedFlags.includes(index)
+      }));
+      
+      const tbody = document.querySelector("#flagsTable tbody");
+      tbody.innerHTML = "";
+      const continent = document.getElementById("continentSelect").value;
+      let lockedArr = [], unlockedArr = [];
+      lockedFlags.forEach((flag, index) => {
+        if (continent !== "all" && flag.continent !== continent) return;
+        if(flag.unlocked) {
+          unlockedArr.push({index, flag});
+        } else {
+          lockedArr.push({index, flag});
+        }
+      });
+      const maxRows = Math.max(lockedArr.length, unlockedArr.length);
+      for(let i = 0; i < maxRows; i++){
+        let lockedContent = "";
+        if(lockedArr[i]) {
+          lockedContent = `<img src="${lockedArr[i].flag.img}" alt="${lockedArr[i].flag.name}" style="width:80px;"><br>
+                           ${lockedArr[i].flag.name}<br>
+                           <button class="unlock-btn" onclick="unlockFlag(${lockedArr[i].index})">${translations[currentLanguage].unlockBtn}</button>`;
+        }
+        let unlockedContent = "";
+        if(unlockedArr[i]) {
+          unlockedContent = `<img src="${unlockedArr[i].flag.img}" alt="${unlockedArr[i].flag.name}" style="width:80px;"><br>
+                             ${unlockedArr[i].flag.name}`;
+        }
+        tbody.innerHTML += `<tr>
+                              <td>${lockedContent}</td>
+                              <td>${unlockedContent}</td>
+                            </tr>`;
+      }
+    }
+    
+    function unlockFlag(index) {
+      const flag = lockedFlags[index];
+      if (totalCoins < flag.price) {
+        alert("Yeterli coin yoxdur!");
+        return;
+      }
+      totalCoins -= flag.price;
+      localStorage.setItem("coins", totalCoins);
+      document.getElementById("navbarCoin").textContent = "💰 " + totalCoins;
+      if (!unlockedFlags.includes(index)) {
+        unlockedFlags.push(index);
+      }
+      localStorage.setItem("unlockedFlags", JSON.stringify(unlockedFlags));
+      renderFlagsTable();
+      generateFlags();
+      document.getElementById("giftMessage").style.display = "none";
+      alert(`${flag.name} açıldı!`);
+    }
+  </script>
+</body>
+</html>
